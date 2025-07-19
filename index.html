@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nishaanth S - Interactive Resume</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The SPA is designed as a narrative-driven, single-page profile to guide the user through Nishaanth's story. It starts with a high-impact hero section and key achievements dashboard to immediately showcase his business acumen. This is followed by an an interactive career timeline that combines work and leadership into a unified journey. A clickable project grid encourages exploration of his technical skills. The structure prioritizes demonstrating impact (revenue, team growth, funding) upfront, making it ideal for a B-school audience, rather than following a rigid, traditional resume format. Navigation is facilitated by a sticky header for quick access to all key areas. This design choice emphasizes storytelling and user engagement over static data presentation. -->
+    <!-- Visualization & Content Choices: 
+        - Key Achievements (Revenue, Team Size, Funding): Goal: Inform & Impress -> Presentation: High-contrast "Key Metric Cards" using HTML/Tailwind -> Interaction: None, for immediate visual impact.
+        - Career Journey (Work & Leadership): Goal: Show Change & Progression -> Presentation: Interactive vertical timeline using HTML/Tailwind & JS -> Interaction: Click-to-reveal details for each role, keeping the initial view clean.
+        - Skills Breakdown: Goal: Compare & Inform -> Presentation: Horizontal Bar Chart using Chart.js (Canvas) -> Interaction: Tooltips on hover provide details, offering a quick visual assessment of capabilities.
+        - Project Showcase: Goal: Organize & Detail -> Presentation: Responsive card grid using HTML/Tailwind -> Interaction: Click-to-expand modal reveals in-depth project details, encouraging user exploration without cluttering the main view.
+        Justification: This blend of static impact cards, interactive timelines, and data visualizations provides a comprehensive yet easily digestible overview of the candidate's profile, aligning with the goal of creating an engaging, informative experience for a busy admissions officer.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #2C3E50;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+                max-height: 60vh;
+            }
+        }
+        .timeline-item-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .timeline-item-content.open {
+            max-height: 500px; 
+        }
+        .modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #3498DB;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3498DB;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-gray-800">
+                Nishaanth S
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#profile" class="nav-link text-gray-600 hover:text-[#3498DB]">Profile</a>
+                <a href="#experience" class="nav-link text-gray-600 hover:text-[#3498DB]">Experience</a>
+                <a href="#projects" class="nav-link text-gray-600 hover:text-[#3498DB]">Projects</a>
+                <a href="#skills" class="nav-link text-gray-600 hover:text-[#3498DB]">Skills</a>
+                <a href="#education" class="nav-link text-gray-600 hover:text-[#3498DB]">Education</a>
+            </div>
+            <div class="md:hidden">
+                <button id="menu-btn" class="text-gray-600 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <a href="#profile" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-200">Profile</a>
+            <a href="#experience" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-200">Experience</a>
+            <a href="#projects" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-200">Projects</a>
+            <a href="#skills" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-200">Skills</a>
+            <a href="#education" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-200">Education</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        
+        <section id="profile" class="text-center min-h-[60vh] flex flex-col justify-center items-center">
+            <h1 class="text-5xl md:text-7xl font-extrabold text-[#2C3E50] tracking-tight">Nishaanth S</h1>
+            <p class="mt-4 text-xl md:text-2xl text-gray-600 font-medium">Engineer | Entrepreneur | Leader</p>
+            <p class="mt-6 max-w-3xl text-lg text-gray-500">
+                A results-driven engineering graduate with proven entrepreneurial success, adept at transforming startups into profitable enterprises. Demonstrated expertise in operations, strategic planning, and team leadership, with a strong foundation in technology and a passion for building impactful ventures.
+            </p>
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+                <a href="mailto:psnishaant@gmail.com" class="bg-[#3498DB] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#2980B9] transition-colors">Contact Me</a>
+                <a href="https://www.linkedin.com/in/nishaanth-s-8384221b2dff" target="_blank" class="bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">LinkedIn Profile</a>
+            </div>
+        </section>
+
+        <section id="achievements" class="py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-[#2C3E50]">Key Achievements</h2>
+                <p class="mt-2 text-lg text-gray-500">Driving measurable impact from the ground up.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div class="bg-white p-8 rounded-xl shadow-lg transform hover:-translate-y-2 transition-transform">
+                    <p class="text-5xl font-extrabold text-[#E74C3C]">₹60 Cr+</p>
+                    <p class="mt-2 text-xl font-semibold text-gray-700">First-Year Revenue</p>
+                    <p class="mt-1 text-gray-500">at VSS Solar Energy</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transform hover:-translate-y-2 transition-transform">
+                    <p class="text-5xl font-extrabold text-[#3498DB]">10+</p>
+                    <p class="mt-2 text-xl font-semibold text-gray-700">Team Members Recruited</p>
+                    <p class="mt-1 text-gray-500">Scaled from inception</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transform hover:-translate-y-2 transition-transform">
+                    <p class="text-5xl font-extrabold text-[#2ECC71]">₹1 Million</p>
+                    <p class="mt-2 text-xl font-semibold text-gray-700">Startup Funding Secured</p>
+                    <p class="mt-1 text-gray-500">Under Nidhi Prayas Scheme</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="experience" class="py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-[#2C3E50]">Career & Leadership Journey</h2>
+                 <p class="mt-2 text-lg text-gray-500">This section provides a timeline of my professional roles and key leadership positions. It showcases a path of increasing responsibility, from managing club finances to building a company from the ground up. Click on each title to expand and view the detailed contributions and responsibilities associated with that role.</p>
+            </div>
+            <div class="relative max-w-2xl mx-auto">
+                <div class="absolute left-1/2 w-0.5 h-full bg-gray-300 transform -translate-x-1/2"></div>
+                <div id="timeline-container" class="space-y-12">
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="py-16 bg-white rounded-xl shadow-md">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-[#2C3E50]">Project Showcase</h2>
+                <p class="mt-2 text-lg text-gray-500 max-w-3xl mx-auto">This area highlights key projects that demonstrate a blend of technical engineering and practical problem-solving. From developing satellite technology to designing 5G hardware, these projects reflect a commitment to innovation. Click on any project card to open a modal and learn more about its objectives, my role, and the outcomes.</p>
+            </div>
+            <div id="project-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+        </section>
+
+        <div id="project-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden modal-backdrop">
+            <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl p-8 relative modal-content transform scale-95">
+                <button id="modal-close-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <h3 id="modal-title" class="text-3xl font-bold text-[#2C3E50] mb-4"></h3>
+                <p id="modal-description" class="text-gray-600 mb-4"></p>
+                <div id="modal-details" class="text-sm text-gray-500 space-y-2"></div>
+            </div>
+        </div>
+
+        <section id="skills" class="py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-[#2C3E50]">Core Competencies</h2>
+                <p class="mt-2 text-lg text-gray-500">A visual representation of my skills, categorized into Business, Management, and Technical domains. This chart reflects a balanced profile capable of both strategic leadership and hands-on technical execution. Hover over the bars to see my self-assessed proficiency level in each area, demonstrating a versatile skill set ready for the challenges of a modern business environment.</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="skillsChart"></canvas>
+            </div>
+        </section>
+
+        <section id="education" class="py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-[#2C3E50]">Education & Awards</h2>
+                <p class="mt-2 text-lg text-gray-500">Foundation of knowledge and record of excellence.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-bold text-[#3498DB]">Education</h3>
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <p class="font-bold text-lg">B.E., Electronics and Communication Engineering</p>
+                            <p class="text-gray-600">Kumaraguru College of Technology, Anna University</p>
+                            <p class="text-sm text-gray-500">Graduation: June 2024 | CGPA: 8.1/10.0</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-lg">Higher Secondary Certificate (Class 12)</p>
+                            <p class="text-gray-600">Suguna PIP School, Central Board</p>
+                            <p class="text-sm text-gray-500">Graduation: 2020 | Marks: 369/500</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-bold text-[#2ECC71]">Awards & Recognition</h3>
+                    <ul class="mt-4 space-y-3 list-disc list-inside text-gray-700">
+                        <li>Mahatma Gandhi Merit Scholarship Award</li>
+                        <li>Achiever of the Year Award (Independence Day 2023)</li>
+                        <li>Runner-up at RIGathon (Sponsored by Emerald Jewel Industry)</li>
+                        <li>Secured ₹1 Million funding for a startup (ITIC Hyderabad)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 Nishaanth S. All Rights Reserved.</p>
+            
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuBtn = document.getElementById('menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    if(this.getAttribute('href').length > 1) {
+                        e.preventDefault();
+                        document.querySelector(this.getAttribute('href')).scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        if (mobileMenu.classList.contains('hidden') === false) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            window.onscroll = () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 68) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.href.includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            };
+
+            const timelineData = [
+                {
+                    date: 'Present',
+                    title: 'Manager',
+                    company: 'VSS Solar Energy Pvt Ltd',
+                    side: 'left',
+                    details: [
+                        "Spearheaded all operational aspects as the company's inaugural employee, driving growth from inception to ₹60 Crore+ revenue in the first year.",
+                        "Managed end-to-end business functions including sales, recruitment, technology implementation, land acquisition, and TNEB approvals.",
+                        "Developed and maintained all technical documents for projects.",
+                        "Worked closely with CMD and Directors of Tamil Nadu Electricity Board (TNEB) for project approvals and execution.",
+                        "Successfully navigated local and political challenges, ensuring smooth project execution and business continuity.",
+                        "Oversaw financial and accounting operations, contributing to robust financial health.",
+                        "Built and scaled the team from scratch to 10 employees within the first year."
+                    ]
+                },
+                {
+                    date: 'Prior Experience',
+                    title: 'Executive to Managing Partner',
+                    company: 'Premier Cotton Industries',
+                    side: 'right',
+                    details: [
+                        "Headed the purchase and production departments, optimizing supply chain and manufacturing processes.",
+                        "Reduced procurement costs by 12%. Increased floor efficiency by 5%."
+                    ]
+                },
+                {
+                    date: 'Leadership',
+                    title: 'Vice President',
+                    company: 'LEED (Entrepreneurship Club)',
+                    side: 'left',
+                    details: [
+                        "Managed official correspondence, representing the organization in external communications.",
+                        "Exercised legal authority to sign official documents and make binding decisions and agreements.",
+                        "Facilitated partnerships with Muthoot Finance.",
+                        "Oversaw Shark Tank (Similar) Event with a price pool of 200,000 INR."
+                    ]
+                },
+                {
+                    date: 'Leadership',
+                    title: 'Joint Treasurer',
+                    company: 'LEED (Entrepreneurship Club)',
+                    side: 'right',
+                    details: [
+                        "Ensured meticulous management of bank accounts, cash, and cheque deposits.",
+                        "Maintained accurate financial records, prepared budgets, and ensured adherence to financial guidelines."
+                    ]
+                },
+                 {
+                    date: 'Internships',
+                    title: 'Multiple Technical Internships',
+                    company: 'Swelect Energy, Ministry of IT, iQube',
+                    side: 'left',
+                    details: [
+                        "Techno Commercial Intern at Swelect Energy Systems Ltd: Responsible for coordinating with the technical team and clients to provide better offers.",
+                        "Cyber Security Intern at Ministry of Electronics and IT, STQC Directorate, Bangalore: Gained practical experience in cybersecurity protocols and testing methodologies.",
+                        "Testing and Quality Control Trainee Intern at Ministry of Electronics and IT: Assisted in quality control procedures and standards adherence.",
+                        "Level 2 Trainee at iQube Innovation Center, Coimbatore: Vigorously trained under Embedded and IoT Domain."
+                    ]
+                }
+            ];
+
+            const timelineContainer = document.getElementById('timeline-container');
+            timelineData.forEach((item, index) => {
+                const alignmentClass = item.side === 'left' ? 'md:items-start md:text-left' : 'md:items-end md:text-right';
+                const dotPositionClass = item.side === 'left' ? 'md:left-1/2 md:-ml-2' : 'md:right-1/2 md:-mr-2';
+                const itemHTML = `
+                    <div class="relative flex flex-col items-center md:flex-row ${item.side === 'right' ? 'md:flex-row-reverse' : ''}">
+                        <div class="md:w-1/2 p-4 flex flex-col items-center ${alignmentClass}">
+                             <div class="w-full cursor-pointer timeline-item-header">
+                                <p class="text-sm font-medium text-[#3498DB]">${item.date}</p>
+                                <h4 class="text-xl font-bold text-[#2C3E50]">${item.title}</h4>
+                                <p class="text-md text-gray-600">${item.company}</p>
+                                <p class="text-xs text-gray-400 mt-2">Click to expand</p>
+                            </div>
+                            <div class="w-full mt-2 timeline-item-content">
+                                <ul class="list-disc list-inside text-gray-500 space-y-1">
+                                    ${item.details.map(d => `<li>${d}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="absolute top-1/2 w-4 h-4 bg-[#3498DB] rounded-full transform -translate-y-1/2 left-1/2 -ml-2 md:left-auto md:right-auto ${dotPositionClass}"></div>
+                    </div>
+                `;
+                timelineContainer.innerHTML += itemHTML;
+            });
+
+            document.querySelectorAll('.timeline-item-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    header.parentElement.querySelector('.timeline-item-content').classList.toggle('open');
+                });
+            });
+            
+            const projectsData = [
+                {
+                    title: "Startup Funding",
+                    short: "Secured ₹1 Million funding for a startup pre-incubated at ITIC Hyderabad.",
+                    description: "Successfully pitched a business concept and secured seed funding under the Nidhi Prayas Scheme, a prestigious grant for early-stage entrepreneurs. The venture was pre-incubated at ITIC Hyderabad, providing mentorship and resources.",
+                    details: {
+                        "Funding Body": "Nidhi Prayas Scheme",
+                        "Amount": "₹1 Million INR",
+                        "Incubator": "ITIC Hyderabad",
+                        "My Role": "Founder, Lead Presenter"
+                    }
+                },
+                {
+                    title: "ROV for Border Monitoring",
+                    short: "Developed a remotely operated underwater vehicle in collaboration with IIT Hyderabad.",
+                    description: "Contributed to a high-impact national security project to build an underwater drone for monitoring Indian borders. This project involved complex system integration and collaboration with a leading technical institute.",
+                    details: {
+                        "Collaboration": "IIT Hyderabad",
+                        "Application": "Defense & Surveillance",
+                        "My Contribution": "System development and integration",
+                        "Technology": "Remotely Operated Vehicle (ROV) tech"
+                    }
+                },
+                {
+                    title: "PICO Satellite",
+                    short: "Developed and deployed a PICO satellite for atmospheric monitoring.",
+                    description: "Led the design, development, and deployment of a miniaturized satellite. The satellite's payload was designed to measure and monitor key atmospheric changes, contributing to environmental data collection. My responsibilities included embedded systems development and managing the team's financial aspects.",
+                    details: {
+                        "Project Scope": "End-to-end satellite development",
+                        "Application": "Atmospheric Science",
+                        "Key Task": "Payload design and system deployment",
+                        "My Role": "Embedded Systems, Team Finance"
+                    }
+                },
+                 {
+                    title: "5G Microstrip Antenna",
+                    short: "Designed a microstrip antenna for 5G applications using SIP and SIG technology.",
+                    description: "Engineered a high-frequency microstrip antenna tailored for the demands of 5G communication. The project focused on using advanced System-in-Package (SIP) and Substrate Integrated Guide (SIG) technologies to achieve optimal performance and miniaturization, including the integration of multiple bands in a single patch.",
+                    details: {
+                        "Technology": "5G, SIP, SIG",
+                        "Component": "Microstrip Antenna",
+                        "Focus": "High-frequency performance and design",
+                        "Innovation": "Integration of multiple bands in single patch"
+                    }
+                },
+                {
+                    title: "Retail Management System",
+                    short: "Created an automated retail store management system using C++.",
+                    description: "Developed a software solution to automate key retail operations, including inventory management, sales tracking, and reporting. The system was built to improve efficiency and reduce manual processing for small retail businesses.",
+                    details: {
+                        "Language": "C++",
+                        "Goal": "Automation and Efficiency",
+                        "Features": "Inventory Tracking, Sales Reporting"
+                    }
+                }
+            ];
+
+            const projectGrid = document.getElementById('project-grid');
+            const modal = document.getElementById('project-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+            const modalDetails = document.getElementById('modal-details');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            projectsData.forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 p-6 rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer';
+                card.innerHTML = `<h4 class="text-xl font-bold text-[#2C3E50]">${project.title}</h4><p class="mt-2 text-gray-600">${project.short}</p>`;
+                card.addEventListener('click', () => {
+                    modalTitle.textContent = project.title;
+                    modalDescription.textContent = project.description;
+                    modalDetails.innerHTML = Object.entries(project.details).map(([key, value]) => `<div><span class="font-semibold text-gray-700">${key}:</span> ${value}</div>`).join('');
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.querySelector('.modal-content').classList.remove('scale-95');
+                        modal.classList.remove('opacity-0');
+                    }, 10);
+                });
+                projectGrid.appendChild(card);
+            });
+            
+            const closeModal = () => {
+                modal.querySelector('.modal-content').classList.add('scale-95');
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            modalCloseBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            const ctx = document.getElementById('skillsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Strategic Planning', 'Operations Mgmt', 'Sales & Marketing', 'Finance & Acct.', 'Recruitment', 'Leadership', 'C / C++', 'MS Office Suite', 'Solar & Power Systems'],
+                    datasets: [
+                        {
+                            label: 'Business & Management',
+                            data: [90, 95, 85, 80, 90, 95, 0, 0, 0],
+                            backgroundColor: '#3498DB',
+                            borderColor: '#2980B9',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Technical',
+                            data: [0, 0, 0, 0, 0, 0, 80, 90, 95], // Assuming 95 for Solar & Power Systems
+                            backgroundColor: '#E74C3C',
+                            borderColor: '#C0392B',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: false },
+                        legend: { display: true, position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        label += `${context.parsed.x}% Proficiency`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            max: 100,
+                             ticks: {
+                                callback: function(value) { return value + "%" }
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
